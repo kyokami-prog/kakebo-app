@@ -1,4 +1,7 @@
 # kakebo-app
+## デモ動画
+
+https://youtube.com/shorts/MFJZ-FM4QB4?feature=share
 
 ## 概要
 Spring Bootで開発した家計簿アプリです。  

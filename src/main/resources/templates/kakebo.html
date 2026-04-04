@@ -383,6 +383,7 @@
             
 
             loadPosts();
+            loadTrend();
         }
 
         document.getElementById("incomeAmount").addEventListener("input",()=>{
@@ -424,6 +425,8 @@
             }
             alert("収入更新成功");
             loadPosts();
+            loadTrend();
+
         }
         //収入削除
         async function deleteIncome(id) {
@@ -438,6 +441,7 @@
 
             alert("収入削除成功");
             loadPosts();
+            loadTrend();
         }
         //支出追加
         async function createExpense(){
@@ -472,6 +476,7 @@
             document.getElementById("expenseDate").value="";
 
             loadPosts();
+            loadTrend();
         }
 
 
@@ -500,6 +505,7 @@
 
             alert("支出更新成功");
             loadPosts();
+            loadTrend();
         }
 
         //支出削除
@@ -514,6 +520,7 @@
 
             alert("支出削除成功");
             loadPosts();
+            loadTrend();
         }
         //ユーザー取得・ホーム画面に表示
         async function loadUser(){
