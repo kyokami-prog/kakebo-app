@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+            <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background-color: #f5f7fb;
+            color: #333;
+        }
+
+        h1 {
+            margin-bottom: 24px;
+        }
+
+        h2, h3, h4 {
+            margin-top: 0;
+        }
+
+        #userArea {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        #loginArea,
+        #incomeArea,
+        #expenseArea,
+        #out {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        input {
+            padding: 8px 10px;
+            margin: 6px 8px 6px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 8px 14px;
+            margin: 6px 8px 6px 0;
+            border: none;
+            border-radius: 8px;
+            background-color: #4a7cff;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #345fe0;
+        }
+
+        #error {
+            color: red;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .section-title {
+            margin-bottom: 12px;
+        }
+
+        .summary-box {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            background: #eef3ff;
+            border-radius: 10px;
+            padding: 12px 16px;
+            min-width: 160px;
+        }
+
+        .list-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        canvas {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+
+        .error-input{
+            border: 2px solid red;
+        }
+
+        .field-error{
+            color: red;
+            font-size:12px;
+            margin-bottom: 8px;
+        }
+    </style>
+
+    </head>
+    <body>
+        <h2>新規登録</h2>
+        <input id="username" placeholder="username">
+        <div id="usernameError" class="field-error"></div>
+
+        <input id="password" placeholder="password" type="password">
+        <div id="passwordError" class="field-error"></div>
+
+        <div id="out" style="display:none"></div>
+        <button onclick="register()">登録</button>
+
+        <button onclick="location.href='kakebo.html'">ログイン画面へ</button>
+
+        
+
+        <script>
+            function setError(input,errorId,message){
+                input.classList.add("error-input");
+                document.getElementById(errorId).textContent=message;
+            }
+
+            function clearError(input,errorId){
+                input.classList.remove("error-input");
+                document.getElementById(errorId).textContent="";
+            }
+
+            function validateRegister(){
+                let isValid=true;
+
+                const username=document.getElementById("username");
+                const password=document.getElementById("password");
+
+                clearError(username,"usernameError");
+                clearError(password,"passwordError");
+
+                if(!username.value){
+                    setError(username,"usernameError","ユーザー名を入力してください");
+                    isValid=false;
+                }
+
+                if(!password.value){
+                    setError(password,"passwordError","パスワードを入力してください");
+                    isValid=false;
+                }
+                return isValid;
+            }
+
+            document.getElementById("username").addEventListener("input", ()=> {
+                clearError(document.getElementById("username"),"usernameError");
+
+            });
+
+            document.getElementById("password").addEventListener("input", ()=>{
+                clearError(document.getElementById("password"),"passwordError");
+            });
+
+            async function register(){
+                const out=document.getElementById("out");
+
+                if(!validateRegister()){
+                    return;
+                }
+
+                const username=document.getElementById("username").value;
+                const password=document.getElementById("password").value;
+
+            
+                try{
+                    const res=await fetch("http://127.0.0.1:8080/api/auth/register",{
+                        method:"POST",
+                        headers:{
+                            "Content-Type":"application/json"
+
+                        },
+                        body:JSON.stringify({username,password})
+                    });
+
+                    const text =await res.text();
+
+                    if(!res.ok){
+                        out.style.display="block";
+                        out.textContent="登録失敗： "+res.status+"\n" + text;
+                        return;
+                    }
+
+                    out.style.display="block";
+                    out.textContent="登録成功";
+                    alert("登録成功");
+
+                    document.getElementById("username").value="";
+                    document.getElementById("password").value="";
+
+                }catch(e){
+                    out.style.display="block";
+                    out.textContent="通信エラー: "+e.message;
+                }
+            }
+        </script>
+    </body>
