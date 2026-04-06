@@ -28,6 +28,8 @@
         #loginArea,
         #incomeArea,
         #expenseArea,
+        #editIncomeArea,
+        #editExpenseArea,
         #out {
             background: #fff;
             border: 1px solid #ddd;
@@ -132,7 +134,7 @@
 
         <div id="incomeArea" style="display:none;">
             <h2>収入</h2>
-            <input id="incomeAmount" placeholder="金額">
+            <input id="incomeAmount" type="number" placeholder="金額" min="1">
             <div id="incomeAmountError" class="field-error"></div>
 
             <input id="incomeCategory" placeholder="カテゴリー">
@@ -140,15 +142,36 @@
 
             <input id="incomeMemo" placeholder="メモ">
 
-            <input id="income_date" placeholder="日付(例：2026-04-01)">
+            <input id="income_date" type="date">
             <div id="incomeDateError" class="field-error"></div>
 
             <button onclick="createIncome()">収入登録</button>      
         </div>
 
+        <div id="editIncomeArea" style="display:none;">
+            <h2>収入を編集</h2>
+
+            <input id="editIncomeId" type="hidden">
+            
+            <input id="editIncomeAmount" type="number" placeholder="金額" min="1">
+            <div id="editIncomeAmountError" class="field-error"></div>
+
+            <input id="editIncomeCategory" placeholder="カテゴリー">
+            <div id="editIncomeCategoryError" class="field-error"></div>
+
+            <input id="editIncomeMemo" placeholder="メモ">
+
+            <input id="editIncomeDate" type="date">
+            <div id="editIncomeDateError" class="field-error"></div>
+            
+            <button onclick="saveIncomeEdit()">更新する</button>
+            <button onclick="cancelIncomeEdit()">キャンセル</button>
+        </div>
+
+
         <div id="expenseArea" style="display:none;">
             <h2>支出</h2>
-            <input id="expenseAmount" placeholder="金額">
+            <input id="expenseAmount" type="number" placeholder="金額" min="1">
             <div id="expenseAmountError" class="field-error"></div>
 
             <input id="expenseCategory" placeholder="カテゴリー">
@@ -156,10 +179,30 @@
 
             <input id="expenseMemo" placeholder="メモ">
 
-            <input id="expenseDate" placeholder="日付(例：2026-04-01)">
+            <input id="expenseDate" type="date">
             <div id="expenseDateError" class="field-error"></div>
 
             <button onclick="createExpense()">支出登録</button>      
+        </div>
+
+        <div id="editExpenseArea" style="display:none;">
+            <h2>支出を編集</h2>
+
+            <input id="editExpenseId" type="hidden">
+
+            <input id="editExpenseAmount" type="number" placeholder="金額" min="1">
+            <div id="editExpenseAmountError" class="field-error"></div>
+
+            <input id="editExpenseCategory" placeholder="カテゴリー">
+            <div id="editExpenseCategoryError" class="field-error"></div>
+
+            <input id="editExpenseMemo" placeholder="メモ">
+            
+            <input id="editExpenseDate" type="date">
+            <div id="editExpenseDateError" class="field-error"></div>
+
+            <button onclick="saveExpenseEdit()">更新する</button>
+            <button onclick="cancelExpenseEdit()">キャンセル</button>
         </div>
 
         
@@ -229,7 +272,7 @@
 
                     clearError(input, f.errorId);
 
-                    const value=input.value;
+                    const value=input.value.trim();
 
                     if(f.required && !value){
                         setError(input, f.errorId,f.message);
@@ -238,7 +281,8 @@
                     }
 
                     if(f.type==="number"){
-                        if(Number(value)<=0){
+                        const num=Number(value);
+                        if(isNaN(num) || num<=0){
                             setError(input,f.errorId,"1以上を入力してください");
                             isValid=false;
                         }
@@ -289,6 +333,56 @@
                 ]);
             }
 
+            function validateEditIncome(){
+                return validate([
+                    {
+                        id:"editIncomeAmount",
+                        errorId:"editIncomeAmountError",
+                        required:true,
+                        type:"number",
+                        message:"金額を入力してください"
+                    },
+                    {
+                        id:"editIncomeCategory",
+                        errorId:"editIncomeCategoryError",
+                        required:true,
+                        message:"カテゴリーを入力してください"
+
+                    },
+                    {
+                        id:"editIncomeDate",
+                        errorId:"editIncomeDateError",
+                        required:true,
+                        message:"日付を入力してください"
+                    }
+                ]);
+            }
+
+            function validateEditExpense(){
+                return validate([
+                    {
+                        id:"editExpenseAmount",
+                        errorId:"editExpenseAmountError",
+                        required:"true",
+                        type:"number",
+                        message:"金額を入力してください"
+                    },
+                    {
+                        id:"editExpenseCategory",
+                        errorId:"editExpenseCategoryError",
+                        required:"true",
+                        message:"カテゴリーを入力してください"
+                    },
+                    {
+                        id:"editExpenseDate",
+                        errorId:"editExpenseDateError",
+                        required:"true",
+                        message:"日付を入力してください"
+                    }
+
+                ]);
+            }
+  
             function validateExpense(){
                 return validate([
                     {
@@ -386,47 +480,71 @@
             loadTrend();
         }
 
-        document.getElementById("incomeAmount").addEventListener("input",()=>{
-            clearError(document.getElementById("incomeAmount"),"incomeAmountError");    
-        });
-
-        document.getElementById("incomeCategory").addEventListener("input",()=>{
-            clearError(document.getElementById("incomeCategory"),"incomeCategoryError");
-        });
-
-        document.getElementById("income_date").addEventListener("input",()=>{
-            clearError(document.getElementById("income_date"),"incomeDateError");
-        })
 
 
-        //収入更新
+        //収入編集
         async function updateIncome(id){
-            const amount=prompt("新しい金額を入力");
-            const category=prompt("新しいカテゴリーを入力");
-            const memo=prompt("新しいメモを入力");
-            const incomeDate=prompt("新しい日付を入力(例：2026/04/01)");
+            const incomeData = await apiFetch("/api/incomes");
+            if(!incomeData) return;
+            
+            const income=incomeData.find(item=>item.id===id);
+            if(!income) return;
 
-            if(amount ===null || category===null || memo===null || incomeDate=== null){
+            document.getElementById("editIncomeId").value=income.id;
+            document.getElementById("editIncomeAmount").value=income.amount;
+            document.getElementById("editIncomeCategory").value=income.category;
+            document.getElementById("editIncomeMemo").value=income.memo || "";
+            document.getElementById("editIncomeDate").value=income.income_date;
+
+            document.getElementById("editIncomeArea").style.display="block";
+
+        }
+
+        //収入更新保存
+        async function saveIncomeEdit(){
+            if(!validateEditIncome()){
                 return;
             }
 
-            const res= await apiFetch(`/api/incomes/${id}`,{
-                method: "PUT",
-                body: JSON.stringify({
-                    amount: Number(amount),
+            const id=document.getElementById("editIncomeId").value;
+            const amount=document.getElementById("editIncomeAmount").value;
+            const category=document.getElementById("editIncomeCategory").value;
+            const memo=document.getElementById("editIncomeMemo").value;
+            const income_date=document.getElementById("editIncomeDate").value;
+
+            const res=await apiFetch(`/api/incomes/${id}`,{
+                method:"PUT",
+                body:JSON.stringify({
+                    amount:Number(amount),
                     category,
                     memo,
-                    income_date: incomeDate
+                    income_date
                 })
             });
-            
-            if(res===null){
-                return;
-            }
+
+            if(!res)return;
+
             alert("収入更新成功");
+            cancelIncomeEdit();
             loadPosts();
             loadTrend();
+        
+        }
 
+        //収入キャンセル処理
+        function cancelIncomeEdit(){
+            document.getElementById("editIncomeArea").style.display="none";
+
+            document.getElementById("editIncomeId").value="";
+            document.getElementById("editIncomeAmount").value="";
+            document.getElementById("editIncomeCategory").value="";
+            document.getElementById("editIncomeMemo").value="";
+            document.getElementById("editIncomeDate").value="";
+
+            clearError(document.getElementById("editIncomeAmount"),"editIncomeAmountError");
+            clearError(document.getElementById("editIncomeCategory"),"editIncomeCategoryError");
+            clearError(document.getElementById("editIncomeDate"),"editIncomeDateError");
+        
         }
         //収入削除
         async function deleteIncome(id) {
@@ -480,33 +598,66 @@
         }
 
 
-        //支出更新
+        //支出編集
         async function updateExpense(id){
-            const amount=prompt("新しい金額を入力");
-            const category=prompt("新しいカテゴリーを入力");
-            const memo=prompt("新しいメモを入力");
-            const expenseDate=prompt("新しい日付を入力(例: 2026/04/01)");
+            const expenseData=await apiFetch("/api/expenses");
+            if(!expenseData)return;
 
-            if(amount===null || category=== null || memo === null || expenseDate=== null ){
-                return;
-            }
+            const expense=expenseData.find(item=>item.id===id);
+            if(!expense)return;
 
-            const res= await apiFetch(`/api/expenses/${id}`,{
+            document.getElementById("editExpenseId").value=expense.id;
+            document.getElementById("editExpenseAmount").value=expense.amount;
+            document.getElementById("editExpenseCategory").value=expense.category;
+            document.getElementById("editExpenseMemo").value=expense.memo || "";
+            document.getElementById("editExpenseDate").value=expense.expenseDate;
+
+            document.getElementById("editExpenseArea").style.display="block";
+
+        }
+        //支出更新保存
+        async function saveExpenseEdit(){
+            if(!validateEditExpense())return;
+        
+            const id=document.getElementById("editExpenseId").value;
+            const amount=document.getElementById("editExpenseAmount").value;
+            const category=document.getElementById("editExpenseCategory").value;
+            const memo=document.getElementById("editExpenseMemo").value;
+            const expenseDate=document.getElementById("editExpenseDate").value;
+
+            const res= await apiFetch(`/api/expenses/${id}`, {
                 method:"PUT",
                 body:JSON.stringify({
                     amount:Number(amount),
                     category,
                     memo,
                     expenseDate
-                })
-            });
 
-            if(!res) return;
-
-            alert("支出更新成功");
-            loadPosts();
-            loadTrend();
+            })
+        });
+        if(!res) return;
+         
+        alert("支出更新成功");
+        cancelExpenseEdit();
+        loadPosts();
+        loadTrend();
         }
+
+        //支出キャンセル処理
+        function cancelExpenseEdit(){
+            document.getElementById("editExpenseArea").style.display="none";
+
+            document.getElementById("editExpenseId").value="";
+            document.getElementById("editExpenseAmount").value="";
+            document.getElementById("editExpenseCategory").value="";
+            document.getElementById("editExpenseMemo").value="";
+            document.getElementById("editExpenseDate").value="";
+
+            clearError(document.getElementById("editExpenseAmount"), "editExpenseAmountError");
+            clearError(document.getElementById("editExpenseCategory"),"editExpenseCategoryError");
+            clearError(document.getElementById("editExpenseDate"),"editExpenseDateError");
+        }
+
 
         //支出削除
         async function deleteExpense(id){
@@ -522,6 +673,7 @@
             loadPosts();
             loadTrend();
         }
+
         //ユーザー取得・ホーム画面に表示
         async function loadUser(){
             const res  = await apiFetch("/api/auth/me");
@@ -581,7 +733,9 @@
         function updateUI(){
             const loginArea=document.getElementById("loginArea");
             const incomeArea=document.getElementById("incomeArea");
+            const editIncomeArea=document.getElementById("editIncomeArea")
             const expenseArea=document.getElementById("expenseArea");
+            const editExpenseArea=document.getElementById("editExpenseArea");
             const out=document.getElementById("out");
             const trendArea=document.getElementById("trendArea");
 
@@ -591,6 +745,8 @@
                 expenseArea.style.display="block";
                 out.style.display="block";
                 trendArea.style.display="block";
+                editIncomeArea.style.display="none";
+                editExpenseArea.style.display="none";
 
                 loadUser();
                 loadPosts();
@@ -601,6 +757,8 @@
                 expenseArea.style.display="none";
                 out.style.display="none";
                 trendArea.style.display="none";
+                editIncomeArea.style.display="none";
+                editExpenseArea.style.display="none";
 
                 document.getElementById("userArea").innerHTML="";
                 document.getElementById("out").innerHTML="";
@@ -651,7 +809,15 @@
 
             {id:"expenseAmount",errorId:"expenseAmountError"},
             {id:"expenseCategory",errorId:"expenseCategoryError"},
-            {id:"expenseDate",errorId:"expenseDateError"}
+            {id:"expenseDate",errorId:"expenseDateError"},
+
+            {id:"editIncomeAmount", errorId:"editIncomeAmountError"},
+            {id:"editIncomeCategory",errorId:"editIncomeCategoryError"},
+            {id:"editIncomeDate",errorId:"editIncomeDateError"},
+
+            {id:"editExpenseAmount",errorId:"editExpenseAmountError"},
+            {id:"editExpenseCategory",errorId:"editExpenseCategoryError"},
+            {id:"editExpenseDate",errorId:"editExpenseDateError"}
         ]);
 
         updateUI();
