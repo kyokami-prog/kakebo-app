@@ -1,4 +1,4 @@
-REATE TABLE expenses (
+CREATE TABLE incomes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     amount INT NOT NULL,

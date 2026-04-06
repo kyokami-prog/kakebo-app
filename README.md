@@ -128,13 +128,14 @@ src
 
 ```bash
 git clone https://github.com/kyokami-prog/kakebo-app.git
-cd kakebo
+cd kakebo-app
 ```
 ### 2. データベース作成
 
 MySQLで以下を実行してください。
 ```sql
 CREATE DATABASE kakebo;
+Use kakebo;
 ```
 
 ### 3. テーブル作成
@@ -153,8 +154,10 @@ spring.datasource.username=your_username
 spring.datasource.password=your_password
 jwt.secret=your_real_secret_key
 
+※ spring.datasource.username と spring.datasource.password には、MySQLのユーザー名とパスワードを設定してください
+
 ### 5. アプリ起動
-./mvnw spring-boot:run
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
 ## 今後の改善点
 	•	UI/UX改善
